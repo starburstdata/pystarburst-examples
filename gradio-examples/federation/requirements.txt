@@ -1,0 +1,9 @@
+gradio
+holidays==0.24
+prophet==1.1.2
+pandas
+plotly
+xarray
+
+ibis-framework[trino]
+pystarburst
