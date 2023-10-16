@@ -1,0 +1,11 @@
+jupyter
+
+openai
+tabulate
+
+pystarburst
+
+gradio
+plotly
+
+pyarrow
