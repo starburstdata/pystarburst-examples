@@ -61,9 +61,11 @@ def main():
         
         # 
         # A quick customer analysis using PyStarburst and an ML Model
+        ## Source code is available on [Github](https://github.com/starburstdata/pystarburst-examples)
+        
         First load the data frames
         """)
-
+        gr.Code(my_data.INITIAL_CODE, language='python', label='Initial Code', interactive=False)
         gr.Code(my_data.LOAD_CODE, language='python', label='Load Data', interactive=False)
 
         # Filters
@@ -110,6 +112,14 @@ def main():
         
         btn_write.click(my_data.write_agg_data, [], [summary], queue=True)
 
+    # Query History
+    with gr.Blocks() as query_tab:
+            gr.Markdown('Query History')
+            queries = gr.Dataframe([], type='array', interactive=False, wrap=True,
+                                headers=['QueryID', 'QueryText'], datatype=['str', 'str'], label='Query History')
+
+            btn = gr.Button('Refresh Query History')
+            btn.click(my_data.get_queries, [], queries, queue=True, every=20)
 
     # Settings Tab
     with gr.Blocks() as settings_tab:
@@ -127,15 +137,11 @@ def main():
         save = gr.Button('Save Settings')
         save.click(save_seetings_ev, inputs=[sb_txt_host, sb_txt_user, sb_txt_pass, open_ai_key, open_ai_model], queue=False)
 
-        gr.Markdown('Query History')
-        queries = gr.Dataframe([], type='array', interactive=False, wrap=True,
-                            headers=['QueryID', 'QueryText'], datatype=['str', 'str'], label='Query History')
-
-        btn = gr.Button('Refresh Query History')
-        btn.click(my_data.get_queries, [], queries, queue=True, every=20)
-
     # Main Loaders
-    demo = gr.TabbedInterface([demo_tab, settings_tab], ['Demo', 'Settings']).queue()
+    if env.SHOW_SETTINGS:
+        demo = gr.TabbedInterface([demo_tab, settings_tab, query_tab], ['Demo', 'Settings', 'Query History'], analytics_enabled=True).queue()
+    else:
+        demo = gr.TabbedInterface([demo_tab, query_tab], ['Demo', 'Query History'], analytics_enabled=True).queue()
     demo.launch(server_name=env.BIND_HOST, server_port=env.PORT, share=env.SHARE, debug=env.DEBUG)
 
 

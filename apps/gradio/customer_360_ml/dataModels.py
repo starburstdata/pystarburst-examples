@@ -94,8 +94,7 @@ class Data():
         to_torch(t: pa.Table)
             Convert pyarrow.Table to torch.Tensor
     """
-    
-    LOAD_CODE = """
+    INITIAL_CODE = """
 # Imports
 from pystarburst import Session, DataFrame
 from pystarburst import functions as f
@@ -111,6 +110,12 @@ session_properties = {
     # See docs: https://github.com/trinodb/trino-python-client#authentication-mechanisms
     'auth': trino.auth.BasicAuthentication(username, password)
 }
+
+session = Session.builder.configs(self.session_properties).create()
+"""
+
+    LOAD_CODE = """
+
 
 # Load Tables
 
@@ -169,7 +174,7 @@ session.table("s3lakehouse.pystarburst_mis_sum.s360_summary").show()
 
     def __init__(self):
         # Setup a session, query history logger, and initial data frames
-        print("INFO: Data Init")
+        if env.DEBUG: print("INFO: Data Init")
         self.session = Session.builder.configs(self.session_properties).create()
 
         self.query_history = self.session.query_history()
@@ -180,7 +185,7 @@ session.table("s3lakehouse.pystarburst_mis_sum.s360_summary").show()
         self.initialized = False
 
     def get_initial_data(self, do_agg = True):
-        print("INFO: Get Initial Data")
+        if env.DEBUG: print("INFO: Get Initial Data")
 
         self.df_onprem_credit = self.session.table('sep_dataproducts.customer_360.customer_with_credit')
         self.df_dl_customer_360 = self.session.table('s3lakehouse.data_product_customer_360.customer_information')
@@ -208,7 +213,7 @@ session.table("s3lakehouse.pystarburst_mis_sum.s360_summary").show()
         if not self.initialized:
             self.get_initial_data(do_agg=False)
         
-        return self.query_history.queries
+        return pd.DataFrame(self.query_history.queries)
 
     def get_unique_segs(self) -> list[str]:
         print("INFO: Get Unique Segs")
