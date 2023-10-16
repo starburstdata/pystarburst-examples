@@ -106,7 +106,7 @@ def main():
 
         btn_write = gr.Button('Write Data')
         summary = gr.Dataframe([], type='array', interactive=False, wrap=True,
-                            headers=['State', 'Risk_Appetite', 'Count_of_Customers'], datatype=['str', 'str', 'number'], label='Summary')
+                            headers=['State', 'Risk_Appetite', 'Count_of_Customers'], datatype=['str', 'str', 'number'], label='Output Table')
         
         btn_write.click(my_data.write_agg_data, [], [summary], queue=True)
 

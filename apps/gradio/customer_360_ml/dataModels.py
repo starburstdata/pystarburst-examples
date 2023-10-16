@@ -141,16 +141,16 @@ df_joined.filter(col('customer_segment').in_(segments))\\
     WRITE_CODE = """
 # Clean up the target
 
-session.sql("CREATE SCHEMA IF NOT EXISTS s3lakehouse.pystarburst_mis_sum").collect()
-session.sql("DROP TABLE IF EXISTS s3lakehouse.pystarburst_mis_sum.missions_summary").collect()
+session.sql("CREATE SCHEMA IF NOT EXISTS s3lakehouse.pystarburst_360_sum").collect()
+session.sql("DROP TABLE IF EXISTS s3lakehouse.pystarburst_360_sum.s360_summary").collect()
 
 # Write the data
 df_joined.write.save_as_table(
-    "s3lakehouse.pystarburst_mis_sum.missions_summary"
+    "s3lakehouse.pystarburst_360_sum.s360_summary"
 )
 
 # Validate the result
-session.table("s3lakehouse.pystarburst_mis_sum.missions_summary").show()
+session.table("s3lakehouse.pystarburst_mis_sum.s360_summary").show()
 """
 
     host = env.HOST
