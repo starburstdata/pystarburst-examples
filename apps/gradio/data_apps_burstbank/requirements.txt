@@ -1,0 +1,12 @@
+jupyter
+python-dotenv
+
+openai
+tabulate
+
+pystarburst
+
+gradio
+plotly
+
+pyarrow
