@@ -175,7 +175,9 @@ session.table("s3lakehouse.pystarburst_mis_sum.s360_summary").show()
     def __init__(self):
         # Setup a session, query history logger, and initial data frames
         if env.DEBUG: print("INFO: Data Init")
-        self.session = Session.builder.configs(self.session_properties).create()
+        builder = Session.builder.configs(self.session_properties)
+        builder._options['source'] = 'PyStarburst:Demo:GradioApp'
+        self.session = builder.create()
 
         self.query_history = self.session.query_history()
         self.queries_list = list()

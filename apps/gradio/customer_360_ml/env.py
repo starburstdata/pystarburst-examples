@@ -1,8 +1,11 @@
 # Prompt user for credentials
 import os
+import dotenv
+from dotenv import load_dotenv
+load_dotenv()
 
 PROPMPT_CREDS=False
-SHOW_SETTINGS=False
+SHOW_SETTINGS=True
 
 # Web App
 PORT = 7860
