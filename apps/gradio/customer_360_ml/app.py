@@ -29,7 +29,6 @@ ML_MODELS = ['OpenAI ChatGPT']
 # Settings
 sb_host = env.HOST
 sb_user = env.USERNAME
-sb_pass = env.PASSWORD
 open_ai_key = env.OPENAI_API_KEY
 open_ai_model = env.OPENAI_MODEL
 
@@ -38,7 +37,7 @@ def save_seetings_ev(self, sb_txt_host, sb_txt_user, sb_txt_pass, data_class: Da
     sb_user = sb_txt_user
     sb_pass = sb_txt_pass
 
-    data_class.save_settings(sb_host, sb_user, sb_pass)
+    data_class.save_settings(sb_host, sb_user)
 
     if openai_class is not None:
         open_ai_key = open_ai_model
@@ -128,14 +127,13 @@ def main():
         gr.Markdown('Starburst Settings')
         sb_txt_host = gr.Textbox(my_data.host, label="Starburst Host")
         sb_txt_user = gr.Textbox(my_data.username, label="Username")
-        sb_txt_pass = gr.Textbox(my_data.password, label="Password", type="password")
 
         gr.Markdown('ML Model Settings')
         open_ai_key = gr.Textbox(env.OPENAI_API_KEY, label="API Key", type="password")
         open_ai_model = gr.Dropdown(my_model.models, label='Model', value=env.OPENAI_MODEL, allow_custom_value=False)
         
         save = gr.Button('Save Settings')
-        save.click(save_seetings_ev, inputs=[sb_txt_host, sb_txt_user, sb_txt_pass, open_ai_key, open_ai_model], queue=False)
+        save.click(save_seetings_ev, inputs=[sb_txt_host, sb_txt_user, open_ai_key, open_ai_model], queue=False)
 
     # Main Loaders
     if env.SHOW_SETTINGS:
