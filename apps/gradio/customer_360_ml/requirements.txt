@@ -1,11 +1,13 @@
 jupyter
 
-openai
+openai==0.28
 tabulate
 
 pystarburst
 
 gradio
 plotly
+
+python-dotenv
 
 pyarrow
