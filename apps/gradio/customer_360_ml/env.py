@@ -1,8 +1,11 @@
 # Prompt user for credentials
 import os
+import dotenv
+from dotenv import load_dotenv
+load_dotenv()
 
 PROPMPT_CREDS=False
-SHOW_SETTINGS=False
+SHOW_SETTINGS=True
 
 # Web App
 PORT = 7860
@@ -13,7 +16,11 @@ DEBUG = False
 # Credentials
 HOST=os.environ.get("HOST")
 USERNAME=os.environ.get("SB_USER")
-PASSWORD=os.environ.get("SB_PASS")
+#PASSWORD=os.environ.get("SB_PASS") # Not needed for OAuth2
+
+# Source Catalog
+SOURCE_CATALOG='sample'
+SOURCE_SCHEMA='burstbank'
 
 # Target Catalog for writing
 TARGET_CATALOG='s3lakehouse'
