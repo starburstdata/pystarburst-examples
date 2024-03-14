@@ -28,7 +28,7 @@ import env
 from tabulate import tabulate
 
 class OpenAI():
-    '''Class to handle OpenAI API calls
+    '''Wrapper class to handle OpenAI API calls
     Attributes
     ----------
         api_key : str
@@ -75,8 +75,9 @@ class OpenAI():
 
     def get_models(self):
         '''Get list of OpenAI models'''
-        models = openai.Model.list(self.api_key)
-        print(models)
+        models_raw = openai.Model.list(self.api_key)
+        models = [i['id'] for i in models_raw['data']]
+        if env.DEBUG: print(f'Available models: {models}')
         return models
 
     def save_settings(self, api_key: str, model: str):
@@ -87,15 +88,12 @@ class OpenAI():
         self.model = model
 
     def set_system_message(self):
-        '''Set system message for OpenAI chatbot.'''
-        
-        #message_data_type = 'csv'
-        #message_data = self.data_class.df_summary.to_pandas().rename(columns={'state': 'State', 'risk_appetite': 'Risk_Appetite', 'count': 'Count_of_Customers'}).to_csv(index=False)
+        '''Set system message for OpenAI chatbot withe appropiate data inlcuded.'''
         
         message_data_type = 'table'
         message_data = tabulate(self.data_class.df_summary.to_pandas().rename(columns={'state': 'State', 'risk_appetite': 'Risk_Appetite', 'count': 'Count_of_Customers'}), headers='keys', tablefmt='outline', showindex=False)
         
-        self.system_message = f'''You are an AI assistant who's purpose is to provide information on structured data.
+        self.system_message = f'''You are an AI assistant who's purpose is to provide information on structured data. Please be as accurate as possible in any calculations.
                                 The data formated as {message_data_type} is: 
                                 {message_data}"'''
 

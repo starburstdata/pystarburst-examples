@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+# This file is used as a wrapper to any of the data maninuplation and PyStarburst interfaces to simulate an MVC pattern in the application. A class (Data) is the main class to handle these actions.
+
 from pystarburst import Session, DataFrame
 from pystarburst import functions as f
 from pystarburst.functions import col
@@ -99,7 +101,7 @@ from pystarburst import functions as f
 from pystarburst.functions import col
 import trino
 
-# Connect to Starburst
+# Connect to Starburst Galaxy
     
 session_properties = {
     'host':host,
@@ -185,6 +187,8 @@ session.table("{env.TARGET_CATALOG}.pystarburst_mis_sum.s360_summary").show()
         self.initialized = False
 
     def get_initial_data(self, do_agg = True):
+        # Pulls the initial data, while peforming some basic clean up and joins
+
         if env.DEBUG: print("INFO: Get Initial Data")
 
         self.df_onprem_credit = self.session.table(f'{env.SOURCE_CATALOG}.{env.SOURCE_SCHEMA}.customer_profile')
