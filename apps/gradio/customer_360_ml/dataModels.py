@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
+# This file is used as a wrapper to any of the data maninuplation and PyStarburst interfaces to simulate an MVC pattern in the application. A class (Data) is the main class to handle these actions.
+
 from pystarburst import Session, DataFrame
 from pystarburst import functions as f
 from pystarburst.functions import col
@@ -34,8 +36,6 @@ class Data():
             Starburst host
         username : str 
             Starburst username
-        password : str 
-            Starburst password
         session_properties : dict 
             Starburst session properties
         session : pystarburst.Session
@@ -101,26 +101,26 @@ from pystarburst import functions as f
 from pystarburst.functions import col
 import trino
 
-# Connect to Starburst
+# Connect to Starburst Galaxy
     
 session_properties = {
     'host':host,
     'port': 443,
     'http_scheme': 'https',
     # See docs: https://github.com/trinodb/trino-python-client#authentication-mechanisms
-    'auth': trino.auth.BasicAuthentication(username, password)
+    "auth": trino.auth.OAuth2Authentication()
 }
 
 session = Session.builder.configs(self.session_properties).create()
 """
 
-    LOAD_CODE = """
+    LOAD_CODE = f"""
 
 
 # Load Tables
 
-df_onprem_credit = session.table('sep_dataproducts.customer_360.customer_with_credit')
-df_dl_customer_360 = session.table('s3lakehouse.data_product_customer_360.customer_information')
+df_onprem_credit = session.table('{env.SOURCE_CATALOG}.{env.SOURCE_SCHEMA}.customer_with_credit')
+df_dl_customer_360 = session.table('{env.SOURCE_CATALOG}.{env.SOURCE_SCHEMA}.customer_information')
 
 # Clean & Join
 
@@ -135,7 +135,7 @@ df_joined = df_onprem_credit.join(df_dl_customer_360,\\
 segments = df_onprem_credit.select('customer_segment').distinct().to_pandas()['customer_segment'].to_list()
     """
 
-    AGG_CODE = """
+    AGG_CODE = f"""
 df_summary = \\
 df_joined.filter(col('customer_segment').in_(segments))\\
 .group_by('state', 'risk_appetite')\\
@@ -143,24 +143,23 @@ df_joined.filter(col('customer_segment').in_(segments))\\
 .sort(col('count').desc())
     """
     
-    WRITE_CODE = """
+    WRITE_CODE = f"""
 # Clean up the target
 
-session.sql("CREATE SCHEMA IF NOT EXISTS s3lakehouse.pystarburst_360_sum").collect()
-session.sql("DROP TABLE IF EXISTS s3lakehouse.pystarburst_360_sum.s360_summary").collect()
+session.sql("CREATE SCHEMA IF NOT EXISTS {env.TARGET_CATALOG}.pystarburst_360_sum").collect()
+session.sql("DROP TABLE IF EXISTS {env.TARGET_CATALOG}.pystarburst_360_sum.s360_summary").collect()
 
 # Write the data
 df_joined.write.save_as_table(
-    "s3lakehouse.pystarburst_360_sum.s360_summary"
+    "{env.TARGET_CATALOG}.pystarburst_360_sum.s360_summary"
 )
 
 # Validate the result
-session.table("s3lakehouse.pystarburst_mis_sum.s360_summary").show()
+session.table("{env.TARGET_CATALOG}.pystarburst_mis_sum.s360_summary").show()
 """
 
     host = env.HOST
     username = env.USERNAME
-    password = env.PASSWORD
 
     session_properties = {
         "host":host,
@@ -169,13 +168,16 @@ session.table("s3lakehouse.pystarburst_mis_sum.s360_summary").show()
         "http_scheme": "https",
         # Setup authentication through login or password or any other supported authentication methods
         # See docs: https://github.com/trinodb/trino-python-client#authentication-mechanisms
-        "auth": trino.auth.BasicAuthentication(username, password)
+        #"auth": trino.auth.BasicAuthentication(username, password)
+        "auth": trino.auth.OAuth2Authentication()
     }
 
     def __init__(self):
         # Setup a session, query history logger, and initial data frames
         if env.DEBUG: print("INFO: Data Init")
-        self.session = Session.builder.configs(self.session_properties).create()
+        builder = Session.builder.configs(self.session_properties)
+        builder._options['source'] = 'PyStarburst:Demo:GradioApp'
+        self.session = builder.create()
 
         self.query_history = self.session.query_history()
         self.queries_list = list()
@@ -185,10 +187,12 @@ session.table("s3lakehouse.pystarburst_mis_sum.s360_summary").show()
         self.initialized = False
 
     def get_initial_data(self, do_agg = True):
+        # Pulls the initial data, while peforming some basic clean up and joins
+
         if env.DEBUG: print("INFO: Get Initial Data")
 
-        self.df_onprem_credit = self.session.table('sep_dataproducts.customer_360.customer_with_credit')
-        self.df_dl_customer_360 = self.session.table('s3lakehouse.data_product_customer_360.customer_information')
+        self.df_onprem_credit = self.session.table(f'{env.SOURCE_CATALOG}.{env.SOURCE_SCHEMA}.customer_profile')
+        self.df_dl_customer_360 = self.session.table(f'{env.SOURCE_CATALOG}.{env.SOURCE_SCHEMA}.customer')
 
         self.df_onprem_credit = self.df_onprem_credit.with_column('risk_appetite', f.sql_expr("replace(\"risk_appetite\", 'wild_west', 'very_low')"))
         self.df_joined = self.df_onprem_credit.join(self.df_dl_customer_360, self.df_onprem_credit['custkey'] == self.df_dl_customer_360['custkey'])
@@ -203,10 +207,9 @@ session.table("s3lakehouse.pystarburst_mis_sum.s360_summary").show()
     def refresh_session(self):
         self.session = Session.builder.configs(self.session_properties).create()
 
-    def save_settings(self, h, u, p):
+    def save_settings(self, h, u):
         self.host = h
         self.username = u
-        self.password = p
         self.refresh_session()
 
     def get_queries(self) -> list:
@@ -240,14 +243,14 @@ session.table("s3lakehouse.pystarburst_mis_sum.s360_summary").show()
         if env.DEBUG: print("INFO: Write Agg Data")
         if not self.initialized:
             self.get_initial_data()
-        self.session.sql("CREATE SCHEMA IF NOT EXISTS s3lakehouse.pystarburst_360_sum").collect()
+        self.session.sql(f"CREATE SCHEMA IF NOT EXISTS {env.TARGET_CATALOG}.pystarburst_360_sum").collect()
 
-        self.session.sql("DROP TABLE IF EXISTS s3lakehouse.pystarburst_360_sum.s360_summary").collect()
+        self.session.sql(f"DROP TABLE IF EXISTS {env.TARGET_CATALOG}.pystarburst_360_sum.s360_summary").collect()
 
         self.df_summary.write.save_as_table(
-            "s3lakehouse.pystarburst_360_sum.s360_summary",
+            f"{env.TARGET_CATALOG}.pystarburst_360_sum.s360_summary",
         )
-        new_table = self.session.table("s3lakehouse.pystarburst_360_sum.s360_summary")
+        new_table = self.session.table(f"{env.TARGET_CATALOG}.pystarburst_360_sum.s360_summary")
 
         return new_table.to_pandas()
 
